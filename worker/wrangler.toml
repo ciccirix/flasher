@@ -1,0 +1,10 @@
+name = "ciccirix-flasher-stats"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Live counter + visitor dot-map storage.
+# 1) wrangler kv namespace create STATS   → copy the printed id below
+# 2) put the id here, then: wrangler deploy
+[[kv_namespaces]]
+binding = "STATS"
+id = "PASTE_KV_NAMESPACE_ID_HERE"
