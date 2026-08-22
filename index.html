@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ciccirix Flasher</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%80%3C/text%3E%3C/svg%3E">
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --bg:#05070a; --panel:#0b1016; --panel2:#0f1620; --line:#1b2735;
+    --txt:#e6f0f7; --dim:#8aa0b2; --accent:#00ff9c; --accent2:#00c8ff;
+    --danger:#ff4d5e; --warn:#ffb020;
+    --glow:0 0 24px rgba(0,255,156,.25);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(0,200,255,.10), transparent 60%),
+      radial-gradient(900px 500px at 90% 20%, rgba(0,255,156,.08), transparent 55%),
+      var(--bg);
+    color:var(--txt); font-family:Inter,system-ui,sans-serif; min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:0 20px 80px}
+  header.hero{text-align:center;padding:64px 0 26px}
+  .logo{font-family:"JetBrains Mono",monospace;font-weight:800;font-size:clamp(46px,9vw,88px);
+    letter-spacing:2px;line-height:1;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:var(--glow);}
+  .logo .colon{color:var(--danger);-webkit-text-fill-color:var(--danger)}
+  .tag{color:var(--dim);font-weight:600;margin-top:12px;font-size:16px;letter-spacing:.3px}
+  .tag b{color:var(--txt)}
+  .browser-warn{display:none;margin:18px auto 0;max-width:640px;background:rgba(255,77,94,.10);
+    border:1px solid rgba(255,77,94,.4);color:#ffd3d8;border-radius:12px;padding:12px 16px;font-size:14px}
+
+  h2.section{font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);
+    margin:40px 0 14px;font-weight:800}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{position:relative;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:18px;padding:22px 20px;cursor:pointer;
+    transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;overflow:hidden}
+  .card:hover{transform:translateY(-3px);border-color:#2b3f55}
+  .card.sel{border-color:var(--accent);box-shadow:var(--glow)}
+  .card.sel::after{content:"● SELEZIONATO";position:absolute;top:12px;right:14px;
+    font-size:10px;font-weight:800;letter-spacing:1px;color:var(--accent)}
+  .ico{font-size:40px;line-height:1;margin-bottom:12px}
+  .card h3{margin:0 0 4px;font-size:20px}
+  .chip{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:11px;
+    color:var(--accent2);border:1px solid #17384a;background:rgba(0,200,255,.07);
+    border-radius:999px;padding:3px 10px;margin:6px 0 10px}
+  .card p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.5}
+
+  .panel{margin-top:26px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:18px;padding:26px;display:none}
+  .panel.show{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .panel .row{display:flex;flex-wrap:wrap;align-items:center;gap:16px;justify-content:space-between}
+  .panel h3{margin:0;font-size:24px}
+  .ver{font-family:"JetBrains Mono",monospace;color:var(--accent);font-weight:700}
+  .feat{list-style:none;padding:0;margin:16px 0 22px;display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}
+  @media(max-width:620px){.feat{grid-template-columns:1fr}}
+  .feat li{color:var(--dim);font-size:14px;padding-left:22px;position:relative}
+  .feat li::before{content:"▹";position:absolute;left:0;color:var(--accent)}
+  .install-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  esp-web-install-button{
+    --esp-tools-button-color:#04120c;
+    --esp-tools-button-text-color:#04120c;
+    --esp-tools-button-background-color:var(--accent);
+  }
+  .hint{color:var(--dim);font-size:13px}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:10px}
+  @media(max-width:760px){.steps{grid-template-columns:1fr 1fr}}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .step .n{font-family:"JetBrains Mono",monospace;color:var(--accent2);font-weight:800;font-size:13px}
+  .step p{margin:6px 0 0;font-size:13.5px;color:var(--dim);line-height:1.5}
+  .frow{display:flex;gap:10px;align-items:center;margin:8px 0}
+  .frow input[type=file]{flex:1;color:var(--dim);font-size:13px}
+  .frow input.off{width:120px;font-family:"JetBrains Mono",monospace;background:var(--panel);
+    border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px}
+  .frow .del{background:none;border:0;color:var(--danger);cursor:pointer;font-size:20px;line-height:1}
+  .crow{display:flex;gap:20px;align-items:center;margin-top:6px;flex-wrap:wrap}
+  .mini{background:var(--panel);border:1px solid var(--line);color:var(--accent2);
+    border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px}
+  .chk{color:var(--dim);font-size:13px;display:flex;gap:6px;align-items:center}
+  .flashbtn{background:var(--accent);color:#04120c;border:0;border-radius:10px;
+    padding:14px 26px;font-weight:800;font-size:16px;cursor:pointer}
+  .flashbtn:disabled{opacity:.5;cursor:default}
+  #log{background:#04070a;border:1px solid var(--line);border-radius:10px;padding:12px;
+    font-family:"JetBrains Mono",monospace;font-size:12px;color:#9fd;max-height:200px;
+    overflow:auto;white-space:pre-wrap;margin-top:12px;display:none}
+  .live{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:stretch}
+  @media(max-width:760px){.live{grid-template-columns:1fr}}
+  .stat{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    border-radius:18px;padding:24px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+  .stat .num{font-family:"JetBrains Mono",monospace;font-weight:800;font-size:52px;line-height:1;
+    color:var(--accent);text-shadow:var(--glow)}
+  .stat .lbl{color:var(--dim);font-size:13px;letter-spacing:.5px}
+  .stat .you{margin-top:14px;color:var(--accent2);font-size:14px;font-weight:600}
+  .stat .you small{display:block;color:var(--dim);font-weight:400;font-size:12px;margin-top:2px}
+  #map{height:280px;border-radius:18px;border:1px solid var(--line);z-index:0;background:#0a0f14}
+  .leaflet-container{background:#0a0f14}
+  footer{text-align:center;color:var(--dim);font-size:13px;margin-top:48px}
+  footer a{color:var(--accent2);text-decoration:none}
+  .req{color:var(--dim);font-size:13px;margin-top:8px}
+  .req b{color:var(--warn)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="logo">ciccirix <span style="-webkit-text-fill-color:var(--txt);color:var(--txt)">FLASHER</span></div>
+    <div class="tag">Installer web per <b>T-Watch Ultra</b>, <b>Marauder C5</b> e <b>ESP32</b> — un clic, dal browser.</div>
+    <div id="bw" class="browser-warn">⚠️ Il tuo browser non supporta Web Serial. Usa <b>Chrome</b> o <b>Edge</b> desktop.</div>
+  </header>
+
+  <h2 class="section">1 · Scegli il dispositivo</h2>
+  <div class="grid" id="cards">
+    <div class="card" data-key="twatch" data-manifest="manifests/twatch.json">
+      <div class="ico">⌚</div>
+      <h3>T-Watch Ultra</h3>
+      <div class="chip">ESP32-S3 · security</div>
+      <p>Threat Radar, AirTag Scream/Replay, Skimmer, Drone ID, GATT, Phantom, RID Spoof, Sentinel, ARP MitM, Mifare.</p>
+    </div>
+    <div class="card" data-key="c5" data-manifest="manifests/c5.json">
+      <div class="ico">📡</div>
+      <h3>Marauder C5</h3>
+      <div class="chip">ESP32-C5 · koko</div>
+      <p>Fork Marauder dual-band 2.4/5GHz: WiFi/BT tools, Evil Portal 5GHz, Web Map, analizzatore banda, CC1101.</p>
+    </div>
+    <div class="card" data-key="esp32" data-manifest="manifests/esp32.json">
+      <div class="ico">🔩</div>
+      <h3>ESP32</h3>
+      <div class="chip">ESP32 · generico</div>
+      <p>Board ESP32 classiche (CYD &amp; co.): firmware generico Marauder/tool. Slot configurabile.</p>
+    </div>
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="row">
+      <h3 id="p-name">—</h3>
+      <span class="ver" id="p-ver"></span>
+    </div>
+    <ul class="feat" id="p-feat"></ul>
+    <div class="install-row" id="install-row">
+      <esp-web-install-button id="btn" manifest="manifests/twatch.json">
+        <span slot="unsupported">Browser non supportato — usa Chrome/Edge desktop.</span>
+        <span slot="not-allowed">Richiede HTTPS.</span>
+      </esp-web-install-button>
+      <span class="hint">Install cancella e riscrive tutta la flash (erase completo).</span>
+    </div>
+
+    <!-- ESP32 custom: pick local .bin file(s) + offset, flash via esptool-js -->
+    <div id="custom" style="display:none">
+      <div id="rows"></div>
+      <div class="crow">
+        <button class="mini" id="addrow">+ aggiungi file</button>
+        <label class="chk"><input type="checkbox" id="erase"> erase completo prima</label>
+      </div>
+      <div class="install-row" style="margin-top:14px">
+        <button class="flashbtn" id="doflash">⚡ FLASH</button>
+        <span class="hint">bin locali dal tuo PC · offset in hex (es. 0x0, 0x1000, 0x10000)</span>
+      </div>
+      <pre id="log"></pre>
+    </div>
+
+    <div class="req" id="p-note"></div>
+  </div>
+
+  <h2 class="section">Live · chi sta flashando</h2>
+  <div class="live">
+    <div class="stat">
+      <div class="num" id="hits">—</div>
+      <div class="lbl">flash / visite totali</div>
+      <div class="you" id="you">📍 localizzo...
+        <small id="you-sub">posizione approssimata dal tuo IP</small>
+      </div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <h2 class="section">2 · Come si fa</h2>
+  <div class="steps">
+    <div class="step"><div class="n">01</div><p>Collega il dispositivo via <b>USB-C dati</b> (non un cavo solo-carica).</p></div>
+    <div class="step"><div class="n">02</div><p>Chrome/Edge desktop. Chiudi ogni altra scheda/monitor che tiene la porta.</p></div>
+    <div class="step"><div class="n">03</div><p><b>INSTALL</b> → scegli la porta del dispositivo → conferma l'erase.</p></div>
+    <div class="step"><div class="n">04</div><p>Aspetta il <b>100%</b> e il reboot. Fatto.</p></div>
+  </div>
+
+  <footer>
+    ciccirix Flasher · basato su <a href="https://esphome.github.io/esp-web-tools/" target="_blank" rel="noopener">ESP Web Tools</a> ·
+    firmware: <a href="https://github.com/ciccirix" target="_blank" rel="noopener">github.com/ciccirix</a><br>
+    <span style="opacity:.6">Solo per hardware tuo o su cui sei autorizzato.</span>
+  </footer>
+</div>
+
+<script>
+  // Per-device metadata for the panel.
+  const DEV = {
+    twatch:{ name:"T-Watch Ultra", ver:"v17", manifest:"manifests/twatch.json",
+      note:"Chip: ESP32-S3. Se la porta app non compare, forza il download mode e riprova.",
+      feat:["Threat Radar anti-stalking","AirTag Scream (fai suonare)","AirTag Replay (decoy Find My)",
+            "Skimmer premium + GPS + probe","Drone Remote ID detect","GATT Explorer / SkeletonKey",
+            "Phantom Flood (CALMATI)","RID Spoof","SubGHz Sentinel","ARP MitM · Deauth · Evil Portal","Mifare reader + dict","Meshtastic + ADS-B"] },
+    c5:{ name:"Marauder C5 — koko", ver:"V9", manifest:"manifests/c5.json",
+      note:"Chip: ESP32-C5 (nuovo). Il web-flash del C5 dipende dal supporto di esptool-js; se fallisce, usa esptool via CLI.",
+      feat:["WiFi 2.4 + 5 GHz","Evil Portal 5GHz","Deauth / Beacon / Probe","Analizzatore di banda (FFT)",
+            "Web Map wardriving","CC1101 sub-GHz","BLE tools","Boot logo Scooby"] },
+    esp32:{ name:"ESP32", ver:"—", manifest:"manifests/esp32.json",
+      note:"Chip: ESP32 classico. Slot generico: metti il tuo merged .bin in /firmware e aggiorna il manifest.",
+      feat:["Board ESP32 classiche (CYD…)","Firmware generico / Marauder ESP32","Merged bin @ 0x0","Configurabile"] } };
+
+  const panel=document.getElementById('panel'), btn=document.getElementById('btn');
+  const pName=document.getElementById('p-name'), pVer=document.getElementById('p-ver'),
+        pFeat=document.getElementById('p-feat'), pNote=document.getElementById('p-note');
+
+  const installRow=document.getElementById('install-row'), custom=document.getElementById('custom');
+  document.querySelectorAll('.card').forEach(c=>{
+    c.addEventListener('click',()=>{
+      document.querySelectorAll('.card').forEach(x=>x.classList.remove('sel'));
+      c.classList.add('sel');
+      const key=c.dataset.key, d=DEV[key];
+      pName.textContent=d.name; pVer.textContent=d.ver;
+      pNote.innerHTML="ℹ️ "+d.note;
+      pFeat.innerHTML=d.feat.map(f=>`<li>${f}</li>`).join('');
+      if(key==='esp32'){                    // local-file flasher (esptool-js)
+        installRow.style.display='none'; custom.style.display='block';
+        if(!document.querySelector('#rows .frow')) addRow('0x0');
+      }else{                                 // manifest install (esp-web-tools)
+        custom.style.display='none'; installRow.style.display='flex';
+        btn.setAttribute('manifest', d.manifest);
+      }
+      panel.classList.add('show');
+      panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+  });
+
+  // ---- ESP32 local .bin flasher (esptool-js) ----
+  const rows=document.getElementById('rows'), logEl=document.getElementById('log');
+  function addRow(off){
+    const r=document.createElement('div'); r.className='frow';
+    r.innerHTML=`<input type="file" accept=".bin"><input class="off" value="${off||'0x10000'}">`+
+                `<button class="del" title="rimuovi">✕</button>`;
+    r.querySelector('.del').onclick=()=>r.remove();
+    rows.appendChild(r);
+  }
+  document.getElementById('addrow').onclick=()=>addRow('0x10000');
+  const L=(s)=>{ logEl.style.display='block'; logEl.textContent+=s+'\n'; logEl.scrollTop=logEl.scrollHeight; };
+
+  document.getElementById('doflash').onclick=async ()=>{
+    if(!('serial' in navigator)){ alert('Serve Chrome/Edge desktop (Web Serial).'); return; }
+    const btnF=document.getElementById('doflash'); btnF.disabled=true; logEl.textContent='';
+    let transport;
+    try{
+      const mod=await import('https://unpkg.com/esptool-js@0.4.5/bundle.js');
+      const {ESPLoader, Transport}=mod;
+      // Read the selected files → binary strings + offsets.
+      const fileArray=[];
+      for(const r of rows.querySelectorAll('.frow')){
+        const f=r.querySelector('input[type=file]').files[0];
+        const off=parseInt(r.querySelector('.off').value,16);
+        if(!f||isNaN(off)) continue;
+        const u8=new Uint8Array(await f.arrayBuffer());
+        let bin=''; for(let i=0;i<u8.length;i++) bin+=String.fromCharCode(u8[i]);
+        fileArray.push({data:bin, address:off});
+        L(`+ ${f.name} → 0x${off.toString(16)} (${u8.length} B)`);
+      }
+      if(!fileArray.length){ L('Nessun file selezionato.'); btnF.disabled=false; return; }
+      const port=await navigator.serial.requestPort();
+      transport=new Transport(port,true);
+      const term={clean(){}, writeLine(d){L(d);}, write(d){logEl.textContent+=d;}};
+      const loader=new ESPLoader({transport, baudrate:921600, terminal:term});
+      const chip=await loader.main();
+      L('Chip: '+chip);
+      let lastPct=-10;
+      await loader.writeFlash({fileArray, flashSize:'keep',
+        eraseAll:document.getElementById('erase').checked, compress:true,
+        reportProgress:(i,w,t)=>{ const p=Math.round(w/t*100);
+          if(p>=lastPct+10||p===100){ lastPct=p; L(`  ${'0x'+fileArray[i].address.toString(16)}  ${p}%`); } }});
+      L('reset...'); await loader.after();
+      L('FATTO ✓ — flash completato');
+    }catch(e){ L('ERRORE: '+(e&&e.message?e.message:e)); }
+    finally{ try{ if(transport) await transport.disconnect(); }catch(_){}; btnF.disabled=false; }
+  };
+
+  // Browser support banner (Web Serial required).
+  if(!('serial' in navigator)) document.getElementById('bw').style.display='block';
+
+  // ==== CONFIG: paste your Cloudflare Worker URL here to enable the REAL live
+  // counter + the global dot-map of all visitors. Leave "" and the counter
+  // stays "—" (no fake numbers) while the "you are here" pin still works.
+  // Worker code + deploy steps: /worker/worker.js in this repo.
+  const STATS_API = "";  // e.g. "https://1337flasher.<you>.workers.dev/hit"
+
+  // ---- Live: real visit counter + IP map (no fake numbers) ----
+  window.addEventListener('load', ()=>{
+    let map;
+    try{
+      map = L.map('map',{attributionControl:false,worldCopyJump:true}).setView([25,10],2);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        {maxZoom:12,subdomains:'abcd'}).addTo(map);
+    }catch(e){}
+    const brightPin=(lat,lon)=>{ if(!map) return;
+      const ic=L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#00ff9c;box-shadow:0 0 12px #00ff9c;border:2px solid #04120c"></div>',iconSize:[16,16]});
+      L.marker([lat,lon],{icon:ic}).addTo(map); };
+    const dimDot=(lat,lon)=>{ if(!map) return;
+      L.circleMarker([lat,lon],{radius:4,color:'#00c8ff',weight:0,fillColor:'#00c8ff',fillOpacity:.5}).addTo(map); };
+
+    // "You are here" — instant, works without any backend (city-level, https).
+    fetch('https://ipwho.is/').then(r=>r.json()).then(d=>{
+      if(!d||!d.success) throw 0;
+      const you=document.getElementById('you'), sub=document.getElementById('you-sub');
+      you.childNodes[0].nodeValue='📍 '+(d.city?d.city+', ':'')+(d.country||'');
+      sub.textContent='~ '+d.latitude.toFixed(2)+', '+d.longitude.toFixed(2)+' (dal tuo IP)';
+      brightPin(d.latitude,d.longitude);
+      if(map && !STATS_API) map.setView([d.latitude,d.longitude],5);
+    }).catch(()=>{ document.getElementById('you').childNodes[0].nodeValue='📍 posizione non disponibile'; });
+
+    // Real global counter + dot map (only if the Worker is configured).
+    if(STATS_API){
+      fetch(STATS_API).then(r=>r.json()).then(d=>{
+        if(typeof d.count==='number') document.getElementById('hits').textContent=d.count.toLocaleString();
+        if(Array.isArray(d.points)) d.points.forEach(p=>dimDot(p[0],p[1]));
+      }).catch(()=>{});
+    } else {
+      document.getElementById('you-sub').textContent+=' · contatore: configura il Worker';
+    }
+  });
+</script>
+</body>
+</html>

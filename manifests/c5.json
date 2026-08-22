@@ -1,0 +1,13 @@
+{
+  "name": "koko — Marauder C5",
+  "version": "9",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C5",
+      "parts": [
+        { "path": "../firmware/koko-c5-v9.bin", "offset": 0 }
+      ]
+    }
+  ]
+}
