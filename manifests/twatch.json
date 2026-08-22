@@ -1,12 +1,12 @@
 {
   "name": "ciccirix — T-Watch Ultra",
-  "version": "17",
+  "version": "18",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
-        { "path": "../firmware/twatch-v17.bin", "offset": 0 }
+        { "path": "../firmware/twatch-v18.bin", "offset": 0 }
       ]
     }
   ]
