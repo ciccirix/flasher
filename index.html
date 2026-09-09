@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ciccirix Flasher</title>
+<title>CALMATI Flasher</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%80%3C/text%3E%3C/svg%3E">
 <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,8 +51,9 @@
     transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;overflow:hidden}
   .card:hover{transform:translateY(-3px);border-color:#2b3f55}
   .card.sel{border-color:var(--accent);box-shadow:var(--glow)}
-  .card.sel::after{content:"● SELEZIONATO";position:absolute;top:12px;right:14px;
-    font-size:10px;font-weight:800;letter-spacing:1px;color:var(--accent)}
+  .card.sel::after{content:"●";position:absolute;top:12px;right:14px;
+    font-size:14px;font-weight:800;letter-spacing:1px;color:var(--accent);
+    text-shadow:0 0 8px rgba(0,255,156,.6)}
   .ico{font-size:40px;line-height:1;margin-bottom:12px}
   .card h3{margin:0 0 4px;font-size:20px}
   .chip{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:11px;
@@ -109,21 +110,50 @@
   .stat .you small{display:block;color:var(--dim);font-weight:400;font-size:12px;margin-top:2px}
   #map{height:280px;border-radius:18px;border:1px solid var(--line);z-index:0;background:#0a0f14}
   .leaflet-container{background:#0a0f14}
+  /* Dark-mode filter on OSM tiles — no API key, always works. */
+  #map .leaflet-tile-pane{filter:invert(.94) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.6)}
+  /* Disclaimer above the Install button — small, honest, always visible. */
+  .disclaimer{background:rgba(0,200,255,.06);border:1px solid #17384a;
+    border-radius:12px;padding:12px 16px;margin:0 0 16px;font-size:13px;color:var(--dim);
+    line-height:1.5}
+  .disclaimer b{color:var(--accent2)}
+  .disclaimer a{color:var(--accent);text-decoration:none;font-weight:600}
+  .disclaimer a:hover{text-decoration:underline}
+  /* Continent tallies painted onto the map — one per continent centroid. */
+  .cont-tally{font-family:"JetBrains Mono",monospace;font-weight:800;text-align:center;
+    color:var(--accent);text-shadow:0 0 12px rgba(0,255,156,.45),0 0 2px #04120c;
+    pointer-events:none;white-space:nowrap;line-height:1}
+  .cont-tally .n{font-size:34px;display:block}
+  .cont-tally .l{font-size:10px;letter-spacing:2px;color:var(--dim);
+    text-shadow:0 0 2px #04120c;margin-top:2px}
   footer{text-align:center;color:var(--dim);font-size:13px;margin-top:48px}
   footer a{color:var(--accent2);text-decoration:none}
   .req{color:var(--dim);font-size:13px;margin-top:8px}
   .req b{color:var(--warn)}
+  /* Language selector: unobtrusive pill top-right, over the hero. */
+  .lang{position:absolute;top:18px;right:20px;display:flex;gap:6px;z-index:5}
+  .lang button{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:800;
+    letter-spacing:1px;background:transparent;border:1px solid var(--line);
+    color:var(--dim);padding:6px 10px;border-radius:999px;cursor:pointer;
+    transition:.15s ease}
+  .lang button:hover{color:var(--txt);border-color:#2b3f55}
+  .lang button.on{color:var(--accent);border-color:var(--accent);
+    box-shadow:0 0 12px rgba(0,255,156,.20)}
+  header.hero{position:relative}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="hero">
-    <div class="logo">ciccirix <span style="-webkit-text-fill-color:var(--txt);color:var(--txt)">FLASHER</span></div>
-    <div class="tag">Installer web per <b>T-Watch Ultra</b>, <b>Marauder C5</b> e <b>ESP32</b> — un clic, dal browser.</div>
-    <div id="bw" class="browser-warn">⚠️ Il tuo browser non supporta Web Serial. Usa <b>Chrome</b> o <b>Edge</b> desktop.</div>
+    <div class="lang" id="lang">
+      <!-- Populated at load time — languages the user can switch to. -->
+    </div>
+    <div class="logo">CALMATI <span style="-webkit-text-fill-color:var(--txt);color:var(--txt)">FLASHER</span></div>
+    <div class="tag" data-i18n="tag">Installer web per <b>T-Watch Ultra</b>, <b>Marauder C5</b> e <b>ESP32</b> — un clic, dal browser.</div>
+    <div id="bw" class="browser-warn" data-i18n="browser_warn">⚠️ Il tuo browser non supporta Web Serial. Usa <b>Chrome</b> o <b>Edge</b> desktop.</div>
   </header>
 
-  <h2 class="section">1 · Scegli il dispositivo</h2>
+  <h2 class="section" data-i18n="section1">1 · Scegli il dispositivo</h2>
   <div class="grid" id="cards">
     <div class="card" data-key="twatch" data-manifest="manifests/twatch.json">
       <div class="ico">⌚</div>
@@ -151,24 +181,28 @@
       <span class="ver" id="p-ver"></span>
     </div>
     <ul class="feat" id="p-feat"></ul>
+    <div class="disclaimer" id="disclaimer" data-i18n="disclaimer">
+      Al termine del flash, il tuo paese (solo codice ISO, es. <b>IT</b>) verrà aggiunto alla mappa live qui sotto.
+      Nessun IP, nessun dato personale viene salvato. <a href="#map">Guarda la mappa &raquo;</a>
+    </div>
     <div class="install-row" id="install-row">
       <esp-web-install-button id="btn" manifest="manifests/twatch.json">
-        <span slot="unsupported">Browser non supportato — usa Chrome/Edge desktop.</span>
-        <span slot="not-allowed">Richiede HTTPS.</span>
+        <span slot="unsupported" data-i18n="btn_unsupported">Browser non supportato — usa Chrome/Edge desktop.</span>
+        <span slot="not-allowed" data-i18n="btn_not_allowed">Richiede HTTPS.</span>
       </esp-web-install-button>
-      <span class="hint">Install cancella e riscrive tutta la flash (erase completo).</span>
+      <span class="hint" data-i18n="install_hint">Install cancella e riscrive tutta la flash (erase completo).</span>
     </div>
 
     <!-- ESP32 custom: pick local .bin file(s) + offset, flash via esptool-js -->
     <div id="custom" style="display:none">
       <div id="rows"></div>
       <div class="crow">
-        <button class="mini" id="addrow">+ aggiungi file</button>
-        <label class="chk"><input type="checkbox" id="erase"> erase completo prima</label>
+        <button class="mini" id="addrow" data-i18n="add_row">+ aggiungi file</button>
+        <label class="chk"><input type="checkbox" id="erase"> <span data-i18n="erase_first">erase completo prima</span></label>
       </div>
       <div class="install-row" style="margin-top:14px">
         <button class="flashbtn" id="doflash">⚡ FLASH</button>
-        <span class="hint">bin locali dal tuo PC · offset in hex (es. 0x0, 0x1000, 0x10000)</span>
+        <span class="hint" data-i18n="flash_hint">bin locali dal tuo PC · offset in hex (es. 0x0, 0x1000, 0x10000)</span>
       </div>
       <pre id="log"></pre>
     </div>
@@ -176,30 +210,30 @@
     <div class="req" id="p-note"></div>
   </div>
 
-  <h2 class="section">Live · chi sta flashando</h2>
+  <h2 class="section" data-i18n="section_live">Live · chi sta flashando</h2>
   <div class="live">
     <div class="stat">
       <div class="num" id="hits">—</div>
-      <div class="lbl">flash / visite totali</div>
-      <div class="you" id="you">📍 localizzo...
-        <small id="you-sub">posizione approssimata dal tuo IP</small>
+      <div class="lbl" data-i18n="lbl_hits">flash / visite totali</div>
+      <div class="you" id="you"><span data-i18n="locating">📍 localizzo...</span>
+        <small id="you-sub" data-i18n="locating_sub">posizione approssimata dal tuo IP</small>
       </div>
     </div>
     <div id="map"></div>
   </div>
 
-  <h2 class="section">2 · Come si fa</h2>
+  <h2 class="section" data-i18n="section2">2 · Come si fa</h2>
   <div class="steps">
-    <div class="step"><div class="n">01</div><p>Collega il dispositivo via <b>USB-C dati</b> (non un cavo solo-carica).</p></div>
-    <div class="step"><div class="n">02</div><p>Chrome/Edge desktop. Chiudi ogni altra scheda/monitor che tiene la porta.</p></div>
-    <div class="step"><div class="n">03</div><p><b>INSTALL</b> → scegli la porta del dispositivo → conferma l'erase.</p></div>
-    <div class="step"><div class="n">04</div><p>Aspetta il <b>100%</b> e il reboot. Fatto.</p></div>
+    <div class="step"><div class="n">01</div><p data-i18n="step1">Collega il dispositivo via <b>USB-C dati</b> (non un cavo solo-carica).</p></div>
+    <div class="step"><div class="n">02</div><p data-i18n="step2">Chrome/Edge desktop. Chiudi ogni altra scheda/monitor che tiene la porta.</p></div>
+    <div class="step"><div class="n">03</div><p data-i18n="step3"><b>INSTALL</b> → scegli la porta del dispositivo → conferma l'erase.</p></div>
+    <div class="step"><div class="n">04</div><p data-i18n="step4">Aspetta il <b>100%</b> e il reboot. Fatto.</p></div>
   </div>
 
   <footer>
-    ciccirix Flasher · basato su <a href="https://esphome.github.io/esp-web-tools/" target="_blank" rel="noopener">ESP Web Tools</a> ·
-    firmware: <a href="https://github.com/ciccirix" target="_blank" rel="noopener">github.com/ciccirix</a><br>
-    <span style="opacity:.6">Solo per hardware tuo o su cui sei autorizzato.</span>
+    CALMATI Flasher · <span data-i18n="powered_by">basato su</span> <a href="https://esphome.github.io/esp-web-tools/" target="_blank" rel="noopener">ESP Web Tools</a> ·
+    <span data-i18n="firmware_label">firmware</span>: <a href="https://github.com/ciccirix" target="_blank" rel="noopener">github.com/ciccirix</a><br>
+    <span style="opacity:.6" data-i18n="footer_note">Solo per hardware tuo o su cui sei autorizzato.</span>
   </footer>
 </div>
 
@@ -288,6 +322,9 @@
           if(p>=lastPct+10||p===100){ lastPct=p; L(`  ${'0x'+fileArray[i].address.toString(16)}  ${p}%`); } }});
       L('reset...'); await loader.after();
       L('FATTO ✓ — flash completato');
+      // Notify the stats backend (dedup'd per install_id on the server so
+      // re-flashing doesn't inflate the count).
+      if(typeof window.__recordFlashHook === 'function') window.__recordFlashHook();
     }catch(e){ L('ERRORE: '+(e&&e.message?e.message:e)); }
     finally{ try{ if(transport) await transport.disconnect(); }catch(_){}; btnF.disabled=false; }
   };
@@ -295,45 +332,352 @@
   // Browser support banner (Web Serial required).
   if(!('serial' in navigator)) document.getElementById('bw').style.display='block';
 
-  // ==== CONFIG: paste your Cloudflare Worker URL here to enable the REAL live
-  // counter + the global dot-map of all visitors. Leave "" and the counter
-  // stays "—" (no fake numbers) while the "you are here" pin still works.
-  // Worker code + deploy steps: /worker/worker.js in this repo.
-  const STATS_API = "";  // e.g. "https://1337flasher.<you>.workers.dev/hit"
+  // ==== CONFIG: Google Apps Script backend that stores {ts, install_id,
+  // country} and returns aggregates. Deploy steps are in /worker/worker.js
+  // (also see README). Blank string = disable stats (no fake numbers).
+  const STATS_API = "https://script.google.com/macros/s/AKfycbwy-SzZwF6wKZsKGHR8PuP7bjoo0FANZAZVpYhlOQAP_W2Z4gmjQ-HWuuV-_3t5q0k/exec";
+
+  // A stable per-browser id so a user re-flashing 10 times doesn't inflate
+  // the counter — the backend dedups on this. Random v4 UUID kept in
+  // localStorage; the user can clear it to become a "new visitor".
+  function installId(){
+    let id = localStorage.getItem('flasher_install_id');
+    if(!id){
+      id = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c/4).toString(16));
+      localStorage.setItem('flasher_install_id', id);
+    }
+    return id;
+  }
+
+  // Approximate centroid of each continent — where we paint the running
+  // tally on the dark map. Picked so labels don't overlap the ocean edges.
+  const CONTINENTS = [
+    {code:'EU', name:'EUROPA',     lat: 54, lon:  15},
+    {code:'NA', name:'N.AMERICA',  lat: 40, lon: -100},
+    {code:'SA', name:'S.AMERICA',  lat:-15, lon: -60},
+    {code:'AS', name:'ASIA',       lat: 30, lon:  90},
+    {code:'AF', name:'AFRICA',     lat:  5, lon:  20},
+    {code:'OC', name:'OCEANIA',    lat:-25, lon: 140},
+  ];
+
+  // Leaflet is loaded with defer, so window.L isn't ready when this script's
+  // top level runs. LL is bound inside the load listener instead — see below.
+  let LL;
+
+  // -------------------------------------------------------------------------
+  // i18n — one static dict per supported language. Every human-facing string
+  // on the page carries a `data-i18n="key"` and gets swapped by applyLang().
+  // <b>/<a> markup is preserved because we assign to innerHTML.
+  // -------------------------------------------------------------------------
+  const I18N = {
+    it: {
+      _name:'ITA',
+      tag:'Installer web per <b>T-Watch Ultra</b>, <b>Marauder C5</b> e <b>ESP32</b> — un clic, dal browser.',
+      browser_warn:'⚠️ Il tuo browser non supporta Web Serial. Usa <b>Chrome</b> o <b>Edge</b> desktop.',
+      section1:'1 · Scegli il dispositivo',
+      section2:'2 · Come si fa',
+      section_live:'Live · chi sta flashando',
+      disclaimer:'Al termine del flash, il tuo paese (solo codice ISO, es. <b>IT</b>) verrà aggiunto alla mappa live qui sotto. Nessun IP, nessun dato personale viene salvato. <a href="#map">Guarda la mappa &raquo;</a>',
+      btn_unsupported:'Browser non supportato — usa Chrome/Edge desktop.',
+      btn_not_allowed:'Richiede HTTPS.',
+      install_hint:'Install cancella e riscrive tutta la flash (erase completo).',
+      add_row:'+ aggiungi file',
+      erase_first:'erase completo prima',
+      flash_hint:'bin locali dal tuo PC · offset in hex (es. 0x0, 0x1000, 0x10000)',
+      lbl_hits:'flash / visite totali',
+      locating:'📍 localizzo...',
+      locating_sub:'posizione approssimata dal tuo IP',
+      step1:'Collega il dispositivo via <b>USB-C dati</b> (non un cavo solo-carica).',
+      step2:'Chrome/Edge desktop. Chiudi ogni altra scheda/monitor che tiene la porta.',
+      step3:'<b>INSTALL</b> → scegli la porta del dispositivo → conferma l\'erase.',
+      step4:'Aspetta il <b>100%</b> e il reboot. Fatto.',
+      powered_by:'basato su',
+      firmware_label:'firmware',
+      footer_note:'Solo per hardware tuo o su cui sei autorizzato.',
+      continents:{EU:'EUROPA',NA:'N.AMERICA',SA:'S.AMERICA',AS:'ASIA',AF:'AFRICA',OC:'OCEANIA'},
+    },
+    en: {
+      _name:'ENG',
+      tag:'Web installer for <b>T-Watch Ultra</b>, <b>Marauder C5</b> and <b>ESP32</b> — one click, from the browser.',
+      browser_warn:'⚠️ Your browser doesn\'t support Web Serial. Use <b>Chrome</b> or <b>Edge</b> desktop.',
+      section1:'1 · Pick your device',
+      section2:'2 · How it works',
+      section_live:'Live · who\'s flashing',
+      disclaimer:'When the flash succeeds, your country (ISO code only, e.g. <b>US</b>) is added to the live map below. No IP, no personal data stored. <a href="#map">See the map &raquo;</a>',
+      btn_unsupported:'Browser not supported — use Chrome/Edge desktop.',
+      btn_not_allowed:'Requires HTTPS.',
+      install_hint:'Install erases and rewrites the whole flash (full erase).',
+      add_row:'+ add file',
+      erase_first:'full erase first',
+      flash_hint:'local .bin from your PC · offsets in hex (e.g. 0x0, 0x1000, 0x10000)',
+      lbl_hits:'total flashes / visits',
+      locating:'📍 locating...',
+      locating_sub:'approximate position from your IP',
+      step1:'Connect the device via <b>USB-C data</b> (not a charge-only cable).',
+      step2:'Chrome/Edge desktop. Close every other tab/monitor holding the port.',
+      step3:'<b>INSTALL</b> → pick the device port → confirm the erase.',
+      step4:'Wait for <b>100%</b> and the reboot. Done.',
+      powered_by:'powered by',
+      firmware_label:'firmware',
+      footer_note:'For your own hardware or hardware you\'re authorised to test.',
+      continents:{EU:'EUROPE',NA:'N.AMERICA',SA:'S.AMERICA',AS:'ASIA',AF:'AFRICA',OC:'OCEANIA'},
+    },
+    es: {
+      _name:'ESP',
+      tag:'Instalador web para <b>T-Watch Ultra</b>, <b>Marauder C5</b> y <b>ESP32</b> — un clic, desde el navegador.',
+      browser_warn:'⚠️ Tu navegador no soporta Web Serial. Usa <b>Chrome</b> o <b>Edge</b> en escritorio.',
+      section1:'1 · Elige el dispositivo',
+      section2:'2 · Cómo se hace',
+      section_live:'En vivo · quién está flasheando',
+      disclaimer:'Al finalizar el flasheo, tu país (solo código ISO, ej. <b>ES</b>) se añadirá al mapa en vivo. No se guarda IP ni ningún dato personal. <a href="#map">Ver el mapa &raquo;</a>',
+      btn_unsupported:'Navegador no soportado — usa Chrome/Edge en escritorio.',
+      btn_not_allowed:'Requiere HTTPS.',
+      install_hint:'Install borra y reescribe toda la flash (borrado completo).',
+      add_row:'+ añadir archivo',
+      erase_first:'borrado completo primero',
+      flash_hint:'.bin locales de tu PC · offsets en hex (ej. 0x0, 0x1000, 0x10000)',
+      lbl_hits:'flasheos / visitas totales',
+      locating:'📍 localizando...',
+      locating_sub:'posición aproximada desde tu IP',
+      step1:'Conecta el dispositivo por <b>USB-C de datos</b> (no un cable solo de carga).',
+      step2:'Chrome/Edge escritorio. Cierra cualquier otra pestaña/monitor que ocupe el puerto.',
+      step3:'<b>INSTALL</b> → elige el puerto del dispositivo → confirma el borrado.',
+      step4:'Espera al <b>100%</b> y al reinicio. Listo.',
+      powered_by:'basado en',
+      firmware_label:'firmware',
+      footer_note:'Solo para hardware propio o autorizado a testear.',
+      continents:{EU:'EUROPA',NA:'N.AMÉRICA',SA:'S.AMÉRICA',AS:'ASIA',AF:'ÁFRICA',OC:'OCEANÍA'},
+    },
+    fr: {
+      _name:'FRA',
+      tag:'Installateur web pour <b>T-Watch Ultra</b>, <b>Marauder C5</b> et <b>ESP32</b> — un clic, depuis le navigateur.',
+      browser_warn:'⚠️ Ton navigateur ne supporte pas Web Serial. Utilise <b>Chrome</b> ou <b>Edge</b> desktop.',
+      section1:'1 · Choisis ton appareil',
+      section2:'2 · Comment ça marche',
+      section_live:'Live · qui flashe',
+      disclaimer:'À la fin du flash, ton pays (code ISO seul, ex. <b>FR</b>) sera ajouté à la carte live. Aucune IP, aucune donnée personnelle enregistrée. <a href="#map">Voir la carte &raquo;</a>',
+      btn_unsupported:'Navigateur non supporté — utilise Chrome/Edge desktop.',
+      btn_not_allowed:'HTTPS requis.',
+      install_hint:'Install efface et réécrit toute la flash (effacement complet).',
+      add_row:'+ ajouter fichier',
+      erase_first:'effacement complet d\'abord',
+      flash_hint:'.bin locaux depuis ton PC · offsets en hex (ex. 0x0, 0x1000, 0x10000)',
+      lbl_hits:'flashs / visites totales',
+      locating:'📍 localisation...',
+      locating_sub:'position approximative d\'après ton IP',
+      step1:'Branche l\'appareil en <b>USB-C data</b> (pas un câble charge-only).',
+      step2:'Chrome/Edge desktop. Ferme toute autre fenêtre/moniteur qui occupe le port.',
+      step3:'<b>INSTALL</b> → choisis le port de l\'appareil → confirme l\'effacement.',
+      step4:'Attends <b>100%</b> et le redémarrage. Terminé.',
+      powered_by:'propulsé par',
+      firmware_label:'firmware',
+      footer_note:'Uniquement pour ton matériel ou du matériel autorisé.',
+      continents:{EU:'EUROPE',NA:'N.AMÉRIQUE',SA:'S.AMÉRIQUE',AS:'ASIE',AF:'AFRIQUE',OC:'OCÉANIE'},
+    },
+    de: {
+      _name:'DEU',
+      tag:'Web-Installer für <b>T-Watch Ultra</b>, <b>Marauder C5</b> und <b>ESP32</b> — ein Klick, direkt im Browser.',
+      browser_warn:'⚠️ Dein Browser unterstützt Web Serial nicht. Nutze <b>Chrome</b> oder <b>Edge</b> am Desktop.',
+      section1:'1 · Wähle dein Gerät',
+      section2:'2 · So geht\'s',
+      section_live:'Live · wer gerade flasht',
+      disclaimer:'Nach dem erfolgreichen Flash wird dein Land (nur ISO-Code, z. B. <b>DE</b>) auf der Live-Karte unten hinzugefügt. Keine IP, keine personenbezogenen Daten. <a href="#map">Karte ansehen &raquo;</a>',
+      btn_unsupported:'Browser nicht unterstützt — nutze Chrome/Edge Desktop.',
+      btn_not_allowed:'Erfordert HTTPS.',
+      install_hint:'Install löscht und überschreibt den gesamten Flash (Full-Erase).',
+      add_row:'+ Datei hinzufügen',
+      erase_first:'zuerst vollständig löschen',
+      flash_hint:'lokale .bin vom PC · Offsets in Hex (z. B. 0x0, 0x1000, 0x10000)',
+      lbl_hits:'Flashes / Besuche gesamt',
+      locating:'📍 lokalisiere...',
+      locating_sub:'ungefähre Position aus deiner IP',
+      step1:'Gerät per <b>USB-C-Datenkabel</b> anschließen (kein reines Ladekabel).',
+      step2:'Chrome/Edge Desktop. Schließe alle anderen Tabs/Monitore, die den Port belegen.',
+      step3:'<b>INSTALL</b> → Geräteport wählen → Löschen bestätigen.',
+      step4:'Warte auf <b>100%</b> und den Reboot. Fertig.',
+      powered_by:'basiert auf',
+      firmware_label:'Firmware',
+      footer_note:'Nur für deine eigene oder freigegebene Hardware.',
+      continents:{EU:'EUROPA',NA:'N.AMERIKA',SA:'S.AMERIKA',AS:'ASIEN',AF:'AFRIKA',OC:'OZEANIEN'},
+    },
+  };
+
+  // Country → default UI language. Anything not listed falls through to
+  // navigator.language, then to English. Only a handful of countries fully
+  // shift the default; visitors from Brazil see PT, but we don't ship PT
+  // yet so it just lands on EN — which is fine.
+  const COUNTRY_TO_LANG = {
+    IT:'it', SM:'it', VA:'it', CH:'it',
+    ES:'es', MX:'es', AR:'es', CO:'es', CL:'es', PE:'es', VE:'es', UY:'es',
+      PY:'es', BO:'es', EC:'es', GT:'es', CU:'es', DO:'es', HN:'es', SV:'es',
+      NI:'es', CR:'es', PA:'es',
+    FR:'fr', BE:'fr', LU:'fr', MC:'fr', CI:'fr', SN:'fr', CM:'fr', GA:'fr',
+    DE:'de', AT:'de', LI:'de',
+  };
+
+  let currentLang = 'en';
+  function applyLang(lang){
+    const dict = I18N[lang] || I18N.en;
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if(dict[key]) el.innerHTML = dict[key];
+    });
+    // Repaint continent tallies with the localised names.
+    if(map){
+      CONTINENTS.forEach(c => c.name = (dict.continents && dict.continents[c.code]) || c.name);
+      // Cached stats trigger the repaint via the last known counts.
+      if(window.__lastByContinent) paintContinents(window.__lastByContinent);
+    }
+    // Highlight the active pill in the selector.
+    document.querySelectorAll('#lang button').forEach(b => {
+      b.classList.toggle('on', b.dataset.lang === lang);
+    });
+    localStorage.setItem('flasher_lang', lang);
+  }
+
+  function buildLangSelector(){
+    const box = document.getElementById('lang');
+    if(!box) return;
+    box.innerHTML = '';
+    Object.keys(I18N).forEach(code => {
+      const b = document.createElement('button');
+      b.dataset.lang = code;
+      b.textContent = I18N[code]._name;
+      b.addEventListener('click', () => applyLang(code));
+      box.appendChild(b);
+    });
+  }
+
+  // Pick the default language: user's saved choice > country-of-IP > browser.
+  function pickDefaultLang(country){
+    const saved = localStorage.getItem('flasher_lang');
+    if(saved && I18N[saved]) return saved;
+    if(country && COUNTRY_TO_LANG[country.toUpperCase()]) return COUNTRY_TO_LANG[country.toUpperCase()];
+    const nav = (navigator.language || 'en').slice(0,2).toLowerCase();
+    return I18N[nav] ? nav : 'en';
+  }
+
+  // Repaint the continent-tally labels from the {by_continent: {EU:44,...}} map.
+  let map;
+  const continentMarkers = {};
+  function paintContinents(byCont){
+    if(!map) return;
+    CONTINENTS.forEach(c => {
+      const n = (byCont && byCont[c.code]) || 0;
+      const html = `<div class="cont-tally"><span class="n">${n.toLocaleString()}</span>`
+                 + `<span class="l">${c.name}</span></div>`;
+      if(continentMarkers[c.code]){
+        continentMarkers[c.code].setIcon(LL.divIcon({className:'',html, iconSize:[110,60], iconAnchor:[55,30]}));
+      } else {
+        continentMarkers[c.code] = LL.marker([c.lat,c.lon],{
+          icon:LL.divIcon({className:'',html, iconSize:[110,60], iconAnchor:[55,30]}),
+          interactive:false, keyboard:false
+        }).addTo(map);
+      }
+    });
+  }
+
+  // Fetch the running aggregates and paint them.
+  async function refreshStats(){
+    if(!STATS_API) return;
+    try{
+      const r = await fetch(STATS_API);
+      const d = await r.json();
+      if(!d || !d.ok) return;
+      const el = document.getElementById('hits');
+      if(el) el.textContent = (d.total || 0).toLocaleString();
+      window.__lastByContinent = d.by_continent || {};
+      paintContinents(window.__lastByContinent);
+    }catch(e){}
+  }
+
+  // POST after a successful flash. Passes the raw IP (from ipwho.is, which
+  // the browser calls anyway) so the backend can geo-resolve to a country
+  // WITHOUT storing the IP itself — only the country code lands in the
+  // spreadsheet. If the caller's country is already known via ipwho.is we
+  // don't strictly need the backend geo-lookup, but going through the same
+  // path keeps the truth in one place.
+  let cachedIp = '';
+  async function recordFlash(){
+    if(!STATS_API) return;
+    try{
+      const url = STATS_API + (cachedIp ? ('?ip=' + encodeURIComponent(cachedIp)) : '');
+      await fetch(url, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'}, // avoids preflight
+        body: JSON.stringify({install_id: installId()}),
+      });
+      await refreshStats();
+    }catch(e){}
+  }
 
   // ---- Live: real visit counter + IP map (no fake numbers) ----
   window.addEventListener('load', ()=>{
-    let map;
+    // Language selector: build the pills and pick a sensible default now
+    // (based on the saved choice or navigator.language). The country hint
+    // from ipwho.is arrives later and may override the default only if the
+    // user hasn't set a preference explicitly.
+    buildLangSelector();
+    applyLang(pickDefaultLang(null));
+
+    // Now that all deferred scripts have run, Leaflet is available.
+    LL = window.L;
+
     try{
-      map = L.map('map',{attributionControl:false,worldCopyJump:true}).setView([25,10],2);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        {maxZoom:12,subdomains:'abcd'}).addTo(map);
+      map = LL.map('map',{attributionControl:false,worldCopyJump:true,
+        zoomControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,
+        boxZoom:false,keyboard:false,touchZoom:false}).setView([20,10],1);
+      // Plain OpenStreetMap tiles — always free, no API key. We darken them
+      // to match the theme via the CSS filter on #map .leaflet-tile-pane.
+      LL.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {maxZoom:6,subdomains:'abc',attribution:''}).addTo(map);
     }catch(e){}
     const brightPin=(lat,lon)=>{ if(!map) return;
-      const ic=L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#00ff9c;box-shadow:0 0 12px #00ff9c;border:2px solid #04120c"></div>',iconSize:[16,16]});
-      L.marker([lat,lon],{icon:ic}).addTo(map); };
-    const dimDot=(lat,lon)=>{ if(!map) return;
-      L.circleMarker([lat,lon],{radius:4,color:'#00c8ff',weight:0,fillColor:'#00c8ff',fillOpacity:.5}).addTo(map); };
+      const ic=LL.divIcon({className:'',html:'<div style="width:14px;height:14px;border-radius:50%;background:#00ff9c;box-shadow:0 0 14px #00ff9c;border:2px solid #04120c"></div>',iconSize:[14,14]});
+      LL.marker([lat,lon],{icon:ic}).addTo(map); };
 
     // "You are here" — instant, works without any backend (city-level, https).
     fetch('https://ipwho.is/').then(r=>r.json()).then(d=>{
       if(!d||!d.success) throw 0;
+      cachedIp = d.ip || '';
+      // Country-driven language auto-detect. Only fires if the user hasn't
+      // pinned a language in localStorage — pickDefaultLang() checks the
+      // saved value first so a manual choice always wins.
+      const cc = (d.country_code || '').toUpperCase();
+      if(!localStorage.getItem('flasher_lang') && cc && COUNTRY_TO_LANG[cc]){
+        applyLang(COUNTRY_TO_LANG[cc]);
+        // Undo the persistence we just did — country hints shouldn't sticky-
+        // save a preference the user never expressed.
+        localStorage.removeItem('flasher_lang');
+      }
       const you=document.getElementById('you'), sub=document.getElementById('you-sub');
-      you.childNodes[0].nodeValue='📍 '+(d.city?d.city+', ':'')+(d.country||'');
-      sub.textContent='~ '+d.latitude.toFixed(2)+', '+d.longitude.toFixed(2)+' (dal tuo IP)';
+      // Replace the localised "locating..." text with the actual place.
+      you.firstElementChild ? (you.firstElementChild.textContent='📍 '+(d.city?d.city+', ':'')+(d.country||''))
+                            : (you.childNodes[0].nodeValue='📍 '+(d.city?d.city+', ':'')+(d.country||''));
+      sub.textContent='~ '+d.latitude.toFixed(2)+', '+d.longitude.toFixed(2);
       brightPin(d.latitude,d.longitude);
-      if(map && !STATS_API) map.setView([d.latitude,d.longitude],5);
-    }).catch(()=>{ document.getElementById('you').childNodes[0].nodeValue='📍 posizione non disponibile'; });
+    }).catch(()=>{
+      const you=document.getElementById('you');
+      if(you.firstElementChild) you.firstElementChild.textContent='📍 —';
+    });
 
-    // Real global counter + dot map (only if the Worker is configured).
-    if(STATS_API){
-      fetch(STATS_API).then(r=>r.json()).then(d=>{
-        if(typeof d.count==='number') document.getElementById('hits').textContent=d.count.toLocaleString();
-        if(Array.isArray(d.points)) d.points.forEach(p=>dimDot(p[0],p[1]));
-      }).catch(()=>{});
-    } else {
-      document.getElementById('you-sub').textContent+=' · contatore: configura il Worker';
+    // Live counter + continent tallies from the backend.
+    refreshStats();
+
+    // Hook the esp-web-tools install-button — it fires state-changed events
+    // during the install; state==='FINISHED' means the flash succeeded.
+    const btn = document.getElementById('btn');
+    if(btn){
+      btn.addEventListener('state-changed', ev => {
+        if(ev.detail && ev.detail.state === 'FINISHED') recordFlash();
+      });
     }
+    // Custom .bin flash path (ESP32 tile) — recordFlash is called from
+    // the "FATTO ✓" success line via a hook we install on doflash below.
+    window.__recordFlashHook = recordFlash;
   });
 </script>
 </body>
