@@ -164,8 +164,14 @@
     <div class="card" data-key="c5" data-manifest="manifests/c5.json">
       <div class="ico">📡</div>
       <h3>Marauder C5</h3>
-      <div class="chip">ESP32-C5 · koko</div>
-      <p>Fork Marauder dual-band 2.4/5GHz: WiFi/BT tools, Evil Portal 5GHz, Web Map, analizzatore banda, CC1101.</p>
+      <div class="chip">ESP32-C5 · Recovery-OTA</div>
+      <p>Marauder dual-band 2.4/5GHz: Recon+BLE (v1.17), Evil Portal 5GHz, skimmer, Web Map, SD Web, CC1101 — e <b>aggiornamento OTA via WiFi</b> (niente USB).</p>
+    </div>
+    <div class="card" data-key="tdongle" data-manifest="manifests/tdongle.json">
+      <div class="ico">🔌</div>
+      <h3>T-Dongle-C5</h3>
+      <div class="chip">ESP32-C5 · Vord C5</div>
+      <p>Rilevatore di skimmer BLE per LilyGO T-Dongle-C5 (USB-A, LCD ST7735): rileva moduli bluetooth ostili nei POS/pompe di benzina.</p>
     </div>
     <div class="card" data-key="esp32" data-manifest="manifests/esp32.json">
       <div class="ico">🔩</div>
@@ -187,6 +193,7 @@
     </div>
     <div class="install-row" id="install-row">
       <esp-web-install-button id="btn" manifest="manifests/twatch.json">
+        <button class="flashbtn" slot="activate" data-i18n="btn_flash">⚡ INSTALLA / FLASH</button>
         <span slot="unsupported" data-i18n="btn_unsupported">Browser non supportato — usa Chrome/Edge desktop.</span>
         <span slot="not-allowed" data-i18n="btn_not_allowed">Richiede HTTPS.</span>
       </esp-web-install-button>
@@ -245,10 +252,13 @@
       feat:["Threat Radar anti-stalking","AirTag Scream (fai suonare)","AirTag Replay (decoy Find My)",
             "Skimmer premium + GPS + probe","Drone Remote ID detect","GATT Explorer / SkeletonKey",
             "Phantom Flood (CALMATI)","RID Spoof","SubGHz Sentinel","ARP MitM · Deauth · Evil Portal","Mifare reader + dict","Meshtastic + ADS-B"] },
-    c5:{ name:"Marauder C5 — koko", ver:"V9", manifest:"manifests/c5.json",
-      note:"Chip: ESP32-C5 (nuovo). Il web-flash del C5 dipende dal supporto di esptool-js; se fallisce, usa esptool via CLI.",
-      feat:["WiFi 2.4 + 5 GHz","Evil Portal 5GHz","Deauth / Beacon / Probe","Analizzatore di banda (FFT)",
-            "Web Map wardriving","CC1101 sub-GHz","BLE tools","Boot logo Scooby"] },
+    c5:{ name:"Marauder C5 — Recovery-OTA", ver:"v10", manifest:"manifests/c5.json",
+      note:"Chip: ESP32-C5 (DevKit/N4 4MB). Immagine completa: bootloader + recovery factory + app. Dopo il flash USB puoi aggiornare via WiFi (Device → Web Flash OTA), utile se la USB del DevKit muore.",
+      feat:["WiFi 2.4 + 5 GHz","Evil Portal 5GHz","Recon Mission + BLE (v1.17)","Analizzatore di banda (FFT)",
+            "Skimmer detector + equalizer","Web Map · SD Web · CC1101","Recovery-OTA WiFi (no USB)","Boot logo + teste MOTU · blocco PIN"] },
+    tdongle:{ name:"Vord C5 — T-Dongle-C5", ver:"v2.0", manifest:"manifests/tdongle.json",
+      note:"Chip: ESP32-C5 (LilyGO T-Dongle-C5, USB-A, LCD ST7735). Rilevatore di skimmer BLE di Pierre Gode/Ragnar. Immagine merged @0x0.",
+      feat:["Skimmer detector BLE","WiFi6 dual-band","LCD ST7735 + LED APA102","Rileva HC-03/HC-05/spymodule","Alert acustico/visivo","Log su seriale"] },
     esp32:{ name:"ESP32", ver:"—", manifest:"manifests/esp32.json",
       note:"Chip: ESP32 classico. Slot generico: metti il tuo merged .bin in /firmware e aggiorna il manifest.",
       feat:["Board ESP32 classiche (CYD…)","Firmware generico / Marauder ESP32","Merged bin @ 0x0","Configurabile"] } };
@@ -379,6 +389,7 @@
       section2:'2 · Come si fa',
       section_live:'Live · chi sta flashando',
       disclaimer:'Al termine del flash, il tuo paese (solo codice ISO, es. <b>IT</b>) verrà aggiunto alla mappa live qui sotto. Nessun IP, nessun dato personale viene salvato. <a href="#map">Guarda la mappa &raquo;</a>',
+      btn_flash:'⚡ INSTALLA / FLASH',
       btn_unsupported:'Browser non supportato — usa Chrome/Edge desktop.',
       btn_not_allowed:'Richiede HTTPS.',
       install_hint:'Install cancella e riscrive tutta la flash (erase completo).',
@@ -405,6 +416,7 @@
       section2:'2 · How it works',
       section_live:'Live · who\'s flashing',
       disclaimer:'When the flash succeeds, your country (ISO code only, e.g. <b>US</b>) is added to the live map below. No IP, no personal data stored. <a href="#map">See the map &raquo;</a>',
+      btn_flash:'⚡ INSTALL / FLASH',
       btn_unsupported:'Browser not supported — use Chrome/Edge desktop.',
       btn_not_allowed:'Requires HTTPS.',
       install_hint:'Install erases and rewrites the whole flash (full erase).',
@@ -431,6 +443,7 @@
       section2:'2 · Cómo se hace',
       section_live:'En vivo · quién está flasheando',
       disclaimer:'Al finalizar el flasheo, tu país (solo código ISO, ej. <b>ES</b>) se añadirá al mapa en vivo. No se guarda IP ni ningún dato personal. <a href="#map">Ver el mapa &raquo;</a>',
+      btn_flash:'⚡ INSTALAR / FLASH',
       btn_unsupported:'Navegador no soportado — usa Chrome/Edge en escritorio.',
       btn_not_allowed:'Requiere HTTPS.',
       install_hint:'Install borra y reescribe toda la flash (borrado completo).',
@@ -457,6 +470,7 @@
       section2:'2 · Comment ça marche',
       section_live:'Live · qui flashe',
       disclaimer:'À la fin du flash, ton pays (code ISO seul, ex. <b>FR</b>) sera ajouté à la carte live. Aucune IP, aucune donnée personnelle enregistrée. <a href="#map">Voir la carte &raquo;</a>',
+      btn_flash:'⚡ INSTALLER / FLASH',
       btn_unsupported:'Navigateur non supporté — utilise Chrome/Edge desktop.',
       btn_not_allowed:'HTTPS requis.',
       install_hint:'Install efface et réécrit toute la flash (effacement complet).',
@@ -483,6 +497,7 @@
       section2:'2 · So geht\'s',
       section_live:'Live · wer gerade flasht',
       disclaimer:'Nach dem erfolgreichen Flash wird dein Land (nur ISO-Code, z. B. <b>DE</b>) auf der Live-Karte unten hinzugefügt. Keine IP, keine personenbezogenen Daten. <a href="#map">Karte ansehen &raquo;</a>',
+      btn_flash:'⚡ INSTALLIEREN / FLASH',
       btn_unsupported:'Browser nicht unterstützt — nutze Chrome/Edge Desktop.',
       btn_not_allowed:'Erfordert HTTPS.',
       install_hint:'Install löscht und überschreibt den gesamten Flash (Full-Erase).',
@@ -508,6 +523,9 @@
   // shift the default; visitors from Brazil see PT, but we don't ship PT
   // yet so it just lands on EN — which is fine.
   const COUNTRY_TO_LANG = {
+    // English-speaking countries — force EN by IP (most visitors are US).
+    US:'en', GB:'en', CA:'en', AU:'en', NZ:'en', IE:'en', ZA:'en', IN:'en',
+      SG:'en', PH:'en', NG:'en', KE:'en', GH:'en', JM:'en', TT:'en', MT:'en',
     IT:'it', SM:'it', VA:'it', CH:'it',
     ES:'es', MX:'es', AR:'es', CO:'es', CL:'es', PE:'es', VE:'es', UY:'es',
       PY:'es', BO:'es', EC:'es', GT:'es', CU:'es', DO:'es', HN:'es', SV:'es',
