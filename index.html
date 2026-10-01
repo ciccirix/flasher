@@ -173,6 +173,12 @@
       <div class="chip">ESP32-C5 · Vord C5</div>
       <p>Rilevatore di skimmer BLE per LilyGO T-Dongle-C5 (USB-A, LCD ST7735): rileva moduli bluetooth ostili nei POS/pompe di benzina.</p>
     </div>
+    <div class="card" data-key="c5pin" data-manifest="">
+      <div class="ico">🔐</div>
+      <h3>Marauder C5 · + PIN</h3>
+      <div class="chip">ESP32-C5 · upgrade</div>
+      <p>Aggiunge il <b>blocco PIN al boot</b> a un Marauder C5 già installato: controllo versione + flash della <b>sola app</b>, <b>senza cancellare i settaggi</b>. Via USB o OTA WiFi.</p>
+    </div>
     <div class="card" data-key="esp32" data-manifest="manifests/esp32.json">
       <div class="ico">🔩</div>
       <h3>ESP32</h3>
@@ -212,6 +218,21 @@
         <span class="hint" data-i18n="flash_hint">bin locali dal tuo PC · offset in hex (es. 0x0, 0x1000, 0x10000)</span>
       </div>
       <pre id="log"></pre>
+    </div>
+
+    <!-- +PIN upgrade: version check + app-only flash that keeps NVS/settings -->
+    <div id="pinup" style="display:none">
+      <div class="install-row">
+        <button class="flashbtn" id="dopin">🔐 Leggi versione &amp; aggiungi PIN</button>
+        <span class="hint">Flash della sola app, <b>senza erase</b>: i tuoi settaggi (e un eventuale PIN) restano.</span>
+      </div>
+      <div class="crow" style="margin-top:10px">
+        <span class="hint">💡 <b>OTA, senza USB</b> (la chicca): scarica
+          <a id="pinbin" href="firmware/marauder-c5-app-pin.bin" download>marauder-c5-app-pin.bin</a>
+          e caricalo dalla pagina <b>Web Flash (OTA)</b> del device (AP <b>Marauder-OTA</b> → <b>192.168.4.1</b>).
+          L'OTA scrive solo l'app, quindi anche così i settaggi restano.</span>
+      </div>
+      <pre id="pinlog"></pre>
     </div>
 
     <div class="req" id="p-note"></div>
@@ -259,6 +280,9 @@
     tdongle:{ name:"Vord C5 — T-Dongle-C5", ver:"v2.0", manifest:"manifests/tdongle.json",
       note:"Chip: ESP32-C5 (LilyGO T-Dongle-C5, USB-A, LCD ST7735). Rilevatore di skimmer BLE di Pierre Gode/Ragnar. Immagine merged @0x0.",
       feat:["Skimmer detector BLE","WiFi6 dual-band","LCD ST7735 + LED APA102","Rileva HC-03/HC-05/spymodule","Alert acustico/visivo","Log su seriale"] },
+    c5pin:{ name:"Marauder C5 · + PIN (upgrade)", ver:"plus", manifest:"",
+      note:"Aggiunge il blocco PIN SENZA erase: legge la partition table, trova l'app principale e scrive SOLO quella (+ boot). NVS e settaggi preservati. Via USB (Web Serial) o OTA (scarica il .bin e caricalo dalla pagina OTA del device).",
+      feat:["Blocco PIN a 6 cifre al boot","Flash app-only: settaggi salvi","Controllo versione installata","USB (Web Serial) o OTA WiFi","NVS preservata (niente erase)"] },
     esp32:{ name:"ESP32", ver:"—", manifest:"manifests/esp32.json",
       note:"Chip: ESP32 classico. Slot generico: metti il tuo merged .bin in /firmware e aggiorna il manifest.",
       feat:["Board ESP32 classiche (CYD…)","Firmware generico / Marauder ESP32","Merged bin @ 0x0","Configurabile"] } };
@@ -276,11 +300,14 @@
       pName.textContent=d.name; pVer.textContent=d.ver;
       pNote.innerHTML="ℹ️ "+d.note;
       pFeat.innerHTML=d.feat.map(f=>`<li>${f}</li>`).join('');
+      const pinup=document.getElementById('pinup');
       if(key==='esp32'){                    // local-file flasher (esptool-js)
-        installRow.style.display='none'; custom.style.display='block';
+        installRow.style.display='none'; custom.style.display='block'; pinup.style.display='none';
         if(!document.querySelector('#rows .frow')) addRow('0x0');
+      }else if(key==='c5pin'){               // +PIN upgrade (app-only, keeps NVS)
+        installRow.style.display='none'; custom.style.display='none'; pinup.style.display='block';
       }else{                                 // manifest install (esp-web-tools)
-        custom.style.display='none'; installRow.style.display='flex';
+        custom.style.display='none'; pinup.style.display='none'; installRow.style.display='flex';
         btn.setAttribute('manifest', d.manifest);
       }
       panel.classList.add('show');
@@ -337,6 +364,74 @@
       if(typeof window.__recordFlashHook === 'function') window.__recordFlashHook();
     }catch(e){ L('ERRORE: '+(e&&e.message?e.message:e)); }
     finally{ try{ if(transport) await transport.disconnect(); }catch(_){}; btnF.disabled=false; }
+  };
+
+  // ---- +PIN upgrade: read partition table + app version, flash app-only ----
+  // (no chip erase → NVS/settings preserved). Works on recovery-OTA layout
+  // (app in ota_0 @0x160000, +boot_app0) and on huge_app (app0 @0x10000).
+  const PL=(s)=>{ const el=document.getElementById('pinlog'); el.style.display='block'; el.textContent+=s+'\n'; el.scrollTop=el.scrollHeight; };
+  const u8ToBin=(u8)=>{ let s=''; for(let i=0;i<u8.length;i++) s+=String.fromCharCode(u8[i]); return s; };
+  function parseParts(u8){
+    const dv=new DataView(u8.buffer); const parts=[];
+    for(let o=0;o+32<=u8.length;o+=32){
+      if(dv.getUint16(o,true)!==0xAA50) break;          // 0x50 0xAA = entry magic
+      let label=''; for(let i=0;i<16;i++){const c=u8[o+12+i]; if(!c)break; label+=String.fromCharCode(c);}
+      parts.push({type:u8[o+2], sub:u8[o+3], off:dv.getUint32(o+4,true), size:dv.getUint32(o+8,true), label});
+    }
+    return parts;
+  }
+  const dopin=document.getElementById('dopin');
+  if(dopin) dopin.onclick=async ()=>{
+    if(!('serial' in navigator)){ alert('Serve Chrome/Edge desktop (Web Serial).'); return; }
+    dopin.disabled=true; document.getElementById('pinlog').textContent='';
+    let transport;
+    try{
+      PL('Scarico il firmware +PIN...');
+      const appBin=new Uint8Array(await (await fetch('firmware/marauder-c5-app-pin.bin')).arrayBuffer());
+      const boot0 =new Uint8Array(await (await fetch('firmware/boot_app0.bin')).arrayBuffer());
+      PL('  app +PIN: '+appBin.length+' B');
+      const mod=await import('https://unpkg.com/esptool-js@0.4.5/bundle.js');
+      const {ESPLoader, Transport}=mod;
+      const port=await navigator.serial.requestPort();
+      transport=new Transport(port,true);
+      const term={clean(){}, writeLine(d){PL(d);}, write(){}};
+      const loader=new ESPLoader({transport, baudrate:921600, terminal:term});
+      const chip=await loader.main();
+      PL('Chip: '+chip);
+      if(!/C5/i.test(chip)){ PL('⚠️ Questo upgrade è per ESP32-C5. Interrompo.'); return; }
+
+      // Partition table @0x8000 → find main app + otadata.
+      const pt=await loader.readFlash(0x8000, 0xC00);
+      const parts=parseParts(pt);
+      if(!parts.length){ PL('ERRORE: partition table non leggibile. Fai prima un flash completo (card Marauder C5).'); return; }
+      const apps=parts.filter(p=>p.type===0);
+      const otadata=parts.find(p=>p.type===1 && p.sub===0);
+      const target=apps.find(p=>p.sub===0x10) || apps.find(p=>p.sub===0x00) || apps[0];
+      if(!target){ PL('ERRORE: nessuna partizione app trovata.'); return; }
+      PL('App principale: '+(target.label||'?')+' @ 0x'+target.off.toString(16)+' ('+target.size+' B)');
+      if(appBin.length>target.size){ PL('ERRORE: l\'app +PIN ('+appBin.length+') non entra nella partizione ('+target.size+').'); return; }
+
+      // Version from esp_app_desc (appOff + 0x20).
+      try{
+        const ad=await loader.readFlash(target.off+0x20, 0x80);
+        const dv=new DataView(ad.buffer);
+        if(dv.getUint32(0,true)===0xABCD5432){
+          const rd=(s)=>{let t='';for(let i=s;i<s+32;i++){const c=ad[i];if(!c)break;t+=String.fromCharCode(c);}return t;};
+          PL('Rilevato: '+(rd(0x30)||'app')+'  ver '+(rd(0x10)||'?'));
+        } else PL('Versione: (header app non standard, procedo comunque)');
+      }catch(_){ PL('Versione: non leggibile, procedo.'); }
+
+      // Flash ONLY the app (+ boot_app0 if it lives in ota_0) — NO chip erase.
+      const fileArray=[{data:u8ToBin(appBin), address:target.off}];
+      if(otadata && target.sub===0x10){ fileArray.push({data:u8ToBin(boot0), address:otadata.off}); PL('Imposto boot su ota_0.'); }
+      PL('Scrivo la sola app (niente erase, settaggi preservati)...');
+      let last=-10;
+      await loader.writeFlash({fileArray, flashSize:'keep', eraseAll:false, compress:true,
+        reportProgress:(i,w,t)=>{ const p=Math.round(w/t*100); if(p>=last+10||p===100){ last=p; PL('  0x'+fileArray[i].address.toString(16)+'  '+p+'%'); } }});
+      PL('reset...'); await loader.after();
+      PL('FATTO ✓ — PIN aggiunto. Al boot il device chiederà di impostarlo.');
+    }catch(e){ PL('ERRORE: '+(e&&e.message?e.message:e)); }
+    finally{ try{ if(transport) await transport.disconnect(); }catch(_){}; dopin.disabled=false; }
   };
 
   // Browser support banner (Web Serial required).
