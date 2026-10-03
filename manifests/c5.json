@@ -1,12 +1,12 @@
 {
-  "name": "Marauder C5 — Recovery-OTA",
-  "version": "10",
+  "name": "Master of Universe C5",
+  "version": "1.0",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-C5",
       "parts": [
-        { "path": "../firmware/marauder-c5-recovery.bin", "offset": 0 }
+        { "path": "../firmware/motu-c5-full.bin", "offset": 0 }
       ]
     }
   ]

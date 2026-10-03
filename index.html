@@ -162,10 +162,10 @@
       <p>Threat Radar, AirTag Scream/Replay, Skimmer, Drone ID, GATT, Phantom, RID Spoof, Sentinel, ARP MitM, Mifare.</p>
     </div>
     <div class="card" data-key="c5" data-manifest="manifests/c5.json">
-      <div class="ico">📡</div>
-      <h3>Marauder C5</h3>
-      <div class="chip">ESP32-C5 · Recovery-OTA</div>
-      <p>Marauder dual-band 2.4/5GHz: Recon+BLE (v1.17), Evil Portal 5GHz, skimmer, Web Map, SD Web — e <b>aggiornamento OTA via WiFi</b> (niente USB).</p>
+      <div class="ico">⚔️</div>
+      <h3>Master of Universe C5</h3>
+      <div class="chip">ESP32-C5 · MOTU</div>
+      <p>Marauder dual-band 2.4/5GHz full: Recon+BLE, Evil Portal 5GHz, <b>Drone Radar su mappa satellitare</b>, wardriving 5GHz+GPS, skimmer, SD Web, OTA WiFi. Menu a teste MOTU.</p>
     </div>
     <div class="card" data-key="tdongle" data-manifest="manifests/tdongle.json">
       <div class="ico">🔌</div>
@@ -273,10 +273,9 @@
       feat:["Threat Radar anti-stalking","AirTag Scream (fai suonare)","AirTag Replay (decoy Find My)",
             "Skimmer premium + GPS + probe","Drone Remote ID detect","GATT Explorer / SkeletonKey",
             "Phantom Flood (CALMATI)","RID Spoof","SubGHz Sentinel","ARP MitM · Deauth · Evil Portal","Mifare reader + dict","Meshtastic + ADS-B"] },
-    c5:{ name:"Marauder C5 — Recovery-OTA", ver:"v10", manifest:"manifests/c5.json",
-      note:"Chip: ESP32-C5 (DevKit/N4 4MB). Immagine completa: bootloader + recovery factory + app. Dopo il flash USB puoi aggiornare via WiFi (Device → Web Flash OTA), utile se la USB del DevKit muore.",
-      feat:["WiFi 2.4 + 5 GHz","Evil Portal 5GHz","Recon Mission + BLE (v1.17)","Analizzatore di banda (FFT)",
-            "Skimmer detector + equalizer","Web Map · SD Web","Recovery-OTA WiFi (no USB)","Boot logo + teste MOTU · blocco PIN"] },
+    c5:{ name:"Master of Universe C5", ver:"v1.0", manifest:"manifests/c5.json",
+      note:"ESP32-C5 (DevKit/N4 4MB) + display 2.8\" ILI9341 touch + microSD esterna + GPS. PIN — Display(SPI HW): SCLK 6, MOSI 7, MISO 2, TFT_CS 10, DC 24, RST 23, BL→3V3, TOUCH_CS 8. SD(SPI sw dedicato): SCK 13, MOSI 14, MISO 5, CS 4. GPS(UART): GPS_TX→IO3, GPS_RX→IO26. 3V3/GND comuni. Dopo il flash USB aggiorni via WiFi (Device→Web Flash OTA). Lista pin completa sul repo GitHub.",
+      feat:["WiFi 2.4 + 5 GHz · Recon + BLE","Evil Portal 5GHz · skimmer + FFT","Drone Radar su MAPPA SATELLITARE (tile SD)","Wardriving 5GHz + GPS su SD","SD su bus software-SPI + SD Web","Recovery-OTA WiFi (no USB)","Menu teste MOTU + boot logo + PIN","Pin: Disp 6/7/2/10/24/23/8 · SD 13/14/5/4 · GPS 3/26"] },
     tdongle:{ name:"Vord C5 — T-Dongle-C5", ver:"v2.0", manifest:"manifests/tdongle.json",
       note:"Chip: ESP32-C5 (LilyGO T-Dongle-C5, USB-A, LCD ST7735). Rilevatore di skimmer BLE di Pierre Gode/Ragnar. Immagine merged @0x0.",
       feat:["Skimmer detector BLE","WiFi6 dual-band","LCD ST7735 + LED APA102","Rileva HC-03/HC-05/spymodule","Alert acustico/visivo","Log su seriale"] },
